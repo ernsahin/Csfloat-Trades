@@ -1,7 +1,8 @@
-{
+{ 
+  
   "api_key": "YOUR-API-KEY",
   "scan_pages": 5,
-  "scan_interval_seconds": 1000,
+  "scan_interval_seconds": 1001,
   
   "min_price": 0.50,
   "max_price": 200.00,
