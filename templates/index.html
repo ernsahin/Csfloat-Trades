@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSFloat Advanced Trading Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1E1E1E;
+            --bg-tertiary: #2C2C2C;
+            --text-primary: #E0E0E0;
+            --text-secondary: #B0B0B0;
+            --border-color: #333333;
+            --profit: #22c55e;
+            --accent: #facc15;
+            --danger: #ef4444;
+        }
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+        }
+        .strategy-column {
+            background-color: var(--bg-secondary);
+            border-top-width: 4px;
+            border-color: var(--border-color);
+        }
+        .deal-card {
+            background-color: var(--bg-tertiary);
+            transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            border: 1px solid var(--border-color);
+        }
+        .deal-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -2px rgba(0, 0, 0, 0.1);
+        }
+        .sort-menu {
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+        }
+        .no-deals {
+            color: var(--text-secondary);
+        }
+        .profit-text { color: var(--profit); }
+        .accent-text { color: var(--accent); }
+        .sticker-tag {
+            background-color: #4a4a4a;
+            color: var(--text-primary);
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+    </style>
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+</head>
+<body class="p-4 sm:p-6 lg:p-8">
+    <div class="max-w-7xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-white mb-2">CSFloat Advanced Trading Dashboard</h1>
+            <p class="text-lg text-gray-400">
+                Found <strong class="text-cyan-400">{{ total_deals }}</strong> total deals. The scanner is running in the background.
+            </p>
+            <div class="mt-4">
+                <a href="/clear" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition-colors duration-200">
+                    Clear All Deals
+                </a>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            
+            {% set strategies = [
+                ('Price Anomaly', '#ef4444', [('profit', 'Profit ($)'), ('discount', 'Discount (%)')]),
+                ('Low Float', '#3b82f6', [('profit', 'Profit ($)'), ('float', 'Float (Lowest)'), ('profit_percent', 'Profit (%)')]),
+                ('Float Tier Upgrade', '#8b5cf6', [('profit', 'Profit ($)'), ('float', 'Float (Lowest)'), ('profit_percent', 'Profit (%)')]),
+                ('High Overpay Potential', '#facc15', [('profit', 'Sticker Value ($)')]),
+                ('Charm Arbitrage', '#e879f9', [('profit', 'Profit ($)'), ('profit_percent', 'Profit (%)')]),
+                ('Conservative', '#22c55e', [('profit', 'Profit ($)'), ('profit_percent', 'Profit (%)')]),
+                ('Aggressive', '#a78bfa', [('profit', 'Profit ($)'), ('profit_percent', 'Profit (%)')])
+            ] %}
+
+            {% for name, color, sorts in strategies %}
+            <div class="strategy-column rounded-lg p-4" style="border-top-color: {{ color }}">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-bold" style="color: {{ color }}">{{ name }} ({{ counts[name] }})</h2>
+                    <select class="sort-menu text-sm rounded-md p-1" data-target="{{ name|lower|replace(' ', '-') }}-deals">
+                        {% for value, text in sorts %}
+                        <option value="{{ value }}">{{ text }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="deal-card-container space-y-4" id="{{ name|lower|replace(' ', '-') }}-deals">
+                    {% for deal in results[name] %}
+                        <a href="{{ deal.url }}" target="_blank" class="deal-card block p-3 rounded-lg" 
+                           data-profit="{{ deal.profit }}" 
+                           data-discount="{{ deal.details.get('Discount', 0) }}"
+                           data-float="{{ deal.details.get('Float', 1) }}"
+                           data-profit-percent="{{ deal.details.get('Profit Percentage', 0) }}">
+                            <div class="flex items-start gap-4">
+                                <img src="https://community.cloudflare.steamstatic.com/economy/image/{{ deal.image_url }}" alt="{{ deal.name }}" class="w-24 h-auto rounded-md flex-shrink-0 mt-1">
+                                <div class="flex-grow">
+                                    <h3 class="font-semibold text-base text-white leading-tight mb-1">{{ deal.name }}</h3>
+                                    
+                                    <div class="text-xs text-gray-400 mb-2">
+                                        {% if deal.details.get('Float') is not none %}
+                                        <span>Float: <strong class="font-medium text-gray-300">{{ "%.5f"|format(deal.details['Float']) }}</strong></span>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if name == 'Price Anomaly' %}
+                                        <p class="text-sm"><span class="text-gray-400">Listing:</span> ${{ "%.2f"|format(deal.details['Listing Price']) }} | <span class="text-gray-400">Market:</span> ${{ "%.2f"|format(deal.details['Market Price']) }}</p>
+                                        <p class="font-bold profit-text text-lg mt-1">+${{ "%.2f"|format(deal.profit) }} ({{ "%.1f"|format(deal.details['Discount']) }}% off)</p>
+                                    {% elif name == 'Low Float' or name == 'Float Tier Upgrade' %}
+                                        <p class="text-sm"><span class="text-gray-400">Listing:</span> ${{ "%.2f"|format(deal.details['Listing Price']) }}</p>
+                                        <p class="text-sm"><span class="text-gray-400">Next Tier:</span> ${{ "%.2f"|format(deal.details['Next Tier Price']) }}</p>
+                                        <p class="font-bold profit-text text-lg mt-1">+${{ "%.2f"|format(deal.profit) }} ({{ "%.1f"|format(deal.details.get('Profit Percentage', 0)) }}%)</p>
+                                    {% elif name == 'High Overpay Potential' %}
+                                        <p class="text-sm"><span class="text-gray-400">Listing:</span> ${{ "%.2f"|format(deal.details['Listing Price']) }}</p>
+                                        <p class="font-bold accent-text text-lg mt-1">Sticker Value: ${{ "%.2f"|format(deal.profit) }}</p>
+                                    {% elif name in ['Conservative', 'Aggressive', 'Charm Arbitrage'] %}
+                                        <p class="text-sm"><span class="text-gray-400">Listing:</span> ${{ "%.2f"|format(deal.details['Listing Price']) }} | <span class="text-gray-400">Base:</span> ${{ "%.2f"|format(deal.details['Base Skin Value']) }}</p>
+                                        {% if deal.details.get('Total Sticker Value') %}
+                                        <p class="text-sm"><span class="text-gray-400">Total Sticker Val:</span> <strong class="text-gray-300">${{ "%.2f"|format(deal.details['Total Sticker Value']) }}</strong></p>
+                                        {% endif %}
+                                        <p class="font-bold profit-text text-lg mt-1">+${{ "%.2f"|format(deal.profit) }} ({{ "%.1f"|format(deal.details.get('Profit Percentage', 0)) }}%)</p>
+                                    {% endif %}
+
+                                    {% set extras = deal.details.get('Stickers') or deal.details.get('Charms') %}
+                                    {% if extras %}
+                                    <div class="mt-2 flex flex-wrap gap-1.5" title="{{ extras|join(', ') }}">
+                                        {% for extra in extras %}
+                                        <span class="sticker-tag">{{ extra }}</span>
+                                        {% endfor %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </a>
+                    {% else %}
+                        <p class="no-deals text-center py-4 italic">No deals found yet...</p>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.sort-menu').forEach(menu => {
+                menu.addEventListener('change', function() {
+                    const targetId = this.dataset.target;
+                    const container = document.getElementById(targetId);
+                    if (!container) return;
+
+                    const sortBy = this.value;
+                    const cards = Array.from(container.querySelectorAll('.deal-card'));
+
+                    cards.sort((a, b) => {
+                        const valA = parseFloat(a.dataset[sortBy]);
+                        const valB = parseFloat(b.dataset[sortBy]);
+                        
+                        // Ascending order for float (lowest is best)
+                        if (sortBy === 'float') {
+                            return valA - valB;
+                        }
+                        
+                        // Descending order for all others (highest is best)
+                        return valB - valA; 
+                    });
+
+                    // Re-append sorted cards
+                    cards.forEach(card => container.appendChild(card));
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+{
+  "api_key": "YOUR-API-KEY",
+  "scan_pages": 5,
+  "scan_interval_seconds": 1000,
+  
+  "min_price": 0.50,
+  "max_price": 200.00,
+
+  "included_weapons": ["AK-47", "AWP", "M4A1-S", "M4A4", "USP-S", "Glock-18", "Desert Eagle", "SSG 08"],
+  
+  "dynamic_profit_targets": [
+    { "max_skin_price": 20.00, "min_profit_usd": 0.75, "min_profit_percentage": 7.0 },  
+    { "max_skin_price": 100.00, "min_profit_usd": 2.50, "min_profit_percentage": 5.0 },  
+    { "max_skin_price": 200.00, "min_profit_usd": 4.00, "min_profit_percentage": 3.0 }
+  ],
+
+  "overpay_max_price_above_base_percentage": 5.0,
+  "overpay_min_sticker_value": 50.00,
+  "max_overpay_for_stickers_percentage": 25.0,
+
+  "min_price_anomaly_discount_percentage": 8.0,
+
+  "low_float_premium_retention_percentage": 30.0,
+  "low_float_min_price_gap_usd": 10.0,
+  "low_float_top_percentile_threshold": 10.0,
+
+  "float_tier_upgrade": {
+    "enabled": true,
+    "max_float_premium_percentage": 3.0,
+    "float_proximity_threshold": 0.008
+  },
+
+  "charm_sale_fee_percentage": 7.0,
+
+  "sticker_retention_tiers": {
+      "conservative": [
+          { "max_skin_price": 5.00, "retention": 1.0 },
+          { "max_skin_price": 50.00, "retention": 4.0 },
+          { "max_skin_price": 200.00, "retention": 6.0 }
+      ],
+      "aggressive": [
+          { "max_skin_price": 5.00, "retention": 2.0 },
+          { "max_skin_price": 50.00, "retention": 8.0 },
+          { "max_skin_price": 200.00, "retention": 15.0 }
+      ]
+  }
+}
